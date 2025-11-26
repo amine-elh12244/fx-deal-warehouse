@@ -28,8 +28,8 @@ test-api:
 	.\mvnw.cmd test -Dtest=FxDealApiTest
 
 coverage:
-	@echo "Opening coverage report..."
-	@powershell -Command "Start-Process target\site\jacoco\index.html"
+	@echo "Checking coverage report..."
+	@powershell -Command "if (-not (Test-Path 'target\site\jacoco\index.html')) { Write-Host 'Coverage report not found. Running tests first...' -ForegroundColor Yellow; .\mvnw.cmd test -q } else { Write-Host 'Opening coverage report...' -ForegroundColor Green }; Start-Process target\site\jacoco\index.html"
 
 up:
 	@echo "Complete setup - Starting all services..."
