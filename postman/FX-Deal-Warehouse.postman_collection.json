@@ -1,0 +1,888 @@
+{
+	"info": {
+		"_postman_id": "fx-deal-warehouse-002",
+		"name": "FX Deal Warehouse API - Complete Test Suite",
+		"description": "Collection complète et corrigée des tests pour l'API FX Deal Warehouse Bloomberg",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "0. Health Check",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response contains health message\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"running\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals/health",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals", "health"]
+				},
+				"description": "Vérifie que l'application est en cours d'exécution"
+			},
+			"response": []
+		},
+		{
+			"name": "1. Import Valid Deal - USD to EUR",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Response has all required fields\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('id');",
+							"    pm.expect(jsonData).to.have.property('dealUniqueId');",
+							"    pm.expect(jsonData).to.have.property('fromCurrencyIsoCode');",
+							"    pm.expect(jsonData).to.have.property('toCurrencyIsoCode');",
+							"    pm.expect(jsonData).to.have.property('dealAmount');",
+							"    pm.expect(jsonData).to.have.property('importedAt');",
+							"});",
+							"",
+							"pm.test(\"Currencies are correct\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.fromCurrencyIsoCode).to.eql('USD');",
+							"    pm.expect(jsonData.toCurrencyIsoCode).to.eql('EUR');",
+							"});",
+							"",
+							"pm.test(\"Amount is correct\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.dealAmount).to.eql(1000.50);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const timestamp = Date.now();",
+							"const random = Math.random().toString(36).substring(7);",
+							"pm.variables.set('testDeal1', `DEAL-${timestamp}-${random}`);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"dealUniqueId\": \"{{testDeal1}}\",\n  \"fromCurrencyIsoCode\": \"USD\",\n  \"toCurrencyIsoCode\": \"EUR\",\n  \"dealTimestamp\": \"2024-01-25T10:30:00\",\n  \"dealAmount\": 1000.50\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2. Missing dealUniqueId",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error response structure is correct\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('status');",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"    pm.expect(jsonData.status).to.eql(400);",
+							"});",
+							"",
+							"pm.test(\"Error mentions validation\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error.toLowerCase()).to.include('validation');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"fromCurrencyIsoCode\": \"USD\",\n  \"toCurrencyIsoCode\": \"EUR\",\n  \"dealTimestamp\": \"2024-01-25T10:30:00\",\n  \"dealAmount\": 1000.50\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "3. Invalid Currency Code",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error message mentions invalid currency\", function () {",
+							"    var responseText = pm.response.text().toLowerCase();",
+							"    pm.expect(responseText).to.satisfy(function(text) {",
+							"        return text.includes('currency') || text.includes('invalid');",
+							"    });",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const timestamp = Date.now();",
+							"pm.variables.set('invalidCurrencyDeal', `DEAL-INV-${timestamp}`);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"dealUniqueId\": \"{{invalidCurrencyDeal}}\",\n  \"fromCurrencyIsoCode\": \"XXX\",\n  \"toCurrencyIsoCode\": \"EUR\",\n  \"dealTimestamp\": \"2024-01-25T10:30:00\",\n  \"dealAmount\": 1000.50\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "4. Same From and To Currencies",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error message mentions different currencies required\", function () {",
+							"    var responseText = pm.response.text().toLowerCase();",
+							"    pm.expect(responseText).to.satisfy(function(text) {",
+							"        return text.includes('different') || text.includes('same') || text.includes('currency');",
+							"    });",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const timestamp = Date.now();",
+							"pm.variables.set('sameCurrencyDeal', `DEAL-SAME-${timestamp}`);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"dealUniqueId\": \"{{sameCurrencyDeal}}\",\n  \"fromCurrencyIsoCode\": \"USD\",\n  \"toCurrencyIsoCode\": \"USD\",\n  \"dealTimestamp\": \"2024-01-25T10:30:00\",\n  \"dealAmount\": 1000.50\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "5. Negative Amount",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error response indicates validation failure\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.status).to.eql(400);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const timestamp = Date.now();",
+							"pm.variables.set('negativeDeal', `DEAL-NEG-${timestamp}`);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"dealUniqueId\": \"{{negativeDeal}}\",\n  \"fromCurrencyIsoCode\": \"USD\",\n  \"toCurrencyIsoCode\": \"EUR\",\n  \"dealTimestamp\": \"2024-01-25T10:30:00\",\n  \"dealAmount\": -100.00\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "6. Zero Amount",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const timestamp = Date.now();",
+							"pm.variables.set('zeroDeal', `DEAL-ZERO-${timestamp}`);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"dealUniqueId\": \"{{zeroDeal}}\",\n  \"fromCurrencyIsoCode\": \"USD\",\n  \"toCurrencyIsoCode\": \"EUR\",\n  \"dealTimestamp\": \"2024-01-25T10:30:00\",\n  \"dealAmount\": 0.00\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "7. Future Timestamp (Should Fail)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error mentions timestamp validation\", function () {",
+							"    var responseText = pm.response.text().toLowerCase();",
+							"    pm.expect(responseText).to.satisfy(function(text) {",
+							"        return text.includes('timestamp') || text.includes('future') || text.includes('past');",
+							"    });",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const timestamp = Date.now();",
+							"pm.variables.set('futureDeal', `DEAL-FUTURE-${timestamp}`);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"dealUniqueId\": \"{{futureDeal}}\",\n  \"fromCurrencyIsoCode\": \"USD\",\n  \"toCurrencyIsoCode\": \"EUR\",\n  \"dealTimestamp\": \"2030-01-25T10:30:00\",\n  \"dealAmount\": 1000.50\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "8. Duplicate Deal - Step 1 (Create)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Deal created successfully\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.dealUniqueId).to.eql('DEAL-DUPLICATE-TEST');",
+							"    // Save the deal ID for next test",
+							"    pm.collectionVariables.set('duplicateTestId', jsonData.dealUniqueId);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"dealUniqueId\": \"DEAL-DUPLICATE-TEST\",\n  \"fromCurrencyIsoCode\": \"GBP\",\n  \"toCurrencyIsoCode\": \"JPY\",\n  \"dealTimestamp\": \"2024-01-25T10:30:00\",\n  \"dealAmount\": 5000.00\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "9. Duplicate Deal - Step 2 (Reject)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 409 Conflict\", function () {",
+							"    pm.response.to.have.status(409);",
+							"});",
+							"",
+							"pm.test(\"Error indicates duplicate\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.status).to.eql(409);",
+							"    pm.expect(jsonData.error.toLowerCase()).to.include('duplicate');",
+							"});",
+							"",
+							"pm.test(\"Error message mentions deal ID\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.message).to.include('DEAL-DUPLICATE-TEST');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"dealUniqueId\": \"DEAL-DUPLICATE-TEST\",\n  \"fromCurrencyIsoCode\": \"GBP\",\n  \"toCurrencyIsoCode\": \"JPY\",\n  \"dealTimestamp\": \"2024-01-25T10:30:00\",\n  \"dealAmount\": 5000.00\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "10. Bulk Import - All Valid",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Response is array\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.be.an('array');",
+							"});",
+							"",
+							"pm.test(\"All 3 deals imported\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.length).to.eql(3);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const timestamp = Date.now();",
+							"pm.variables.set('bulkValid1', `BULK-VALID-${timestamp}-1`);",
+							"pm.variables.set('bulkValid2', `BULK-VALID-${timestamp}-2`);",
+							"pm.variables.set('bulkValid3', `BULK-VALID-${timestamp}-3`);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[\n  {\n    \"dealUniqueId\": \"{{bulkValid1}}\",\n    \"fromCurrencyIsoCode\": \"USD\",\n    \"toCurrencyIsoCode\": \"EUR\",\n    \"dealTimestamp\": \"2024-01-25T10:00:00\",\n    \"dealAmount\": 1000.00\n  },\n  {\n    \"dealUniqueId\": \"{{bulkValid2}}\",\n    \"fromCurrencyIsoCode\": \"GBP\",\n    \"toCurrencyIsoCode\": \"JPY\",\n    \"dealTimestamp\": \"2024-01-25T11:00:00\",\n    \"dealAmount\": 2000.00\n  },\n  {\n    \"dealUniqueId\": \"{{bulkValid3}}\",\n    \"fromCurrencyIsoCode\": \"EUR\",\n    \"toCurrencyIsoCode\": \"CHF\",\n    \"dealTimestamp\": \"2024-01-25T12:00:00\",\n    \"dealAmount\": 3000.00\n  }\n]"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals/bulk",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals", "bulk"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "11. Bulk Import - Mixed Valid and Invalid",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Response is array\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.be.an('array');",
+							"});",
+							"",
+							"pm.test(\"Only 2 valid deals imported (partial success)\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.length).to.eql(2);",
+							"});",
+							"",
+							"pm.test(\"Valid deals have correct IDs\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    var dealIds = jsonData.map(deal => deal.dealUniqueId);",
+							"    pm.expect(dealIds).to.include(pm.variables.get('bulkMixed1'));",
+							"    pm.expect(dealIds).to.include(pm.variables.get('bulkMixed3'));",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const timestamp = Date.now();",
+							"pm.variables.set('bulkMixed1', `BULK-MIXED-${timestamp}-1`);",
+							"pm.variables.set('bulkMixed2', `BULK-MIXED-${timestamp}-2`);",
+							"pm.variables.set('bulkMixed3', `BULK-MIXED-${timestamp}-3`);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[\n  {\n    \"dealUniqueId\": \"{{bulkMixed1}}\",\n    \"fromCurrencyIsoCode\": \"USD\",\n    \"toCurrencyIsoCode\": \"EUR\",\n    \"dealTimestamp\": \"2024-01-25T10:00:00\",\n    \"dealAmount\": 1000.00\n  },\n  {\n    \"dealUniqueId\": \"{{bulkMixed2}}\",\n    \"fromCurrencyIsoCode\": \"XXX\",\n    \"toCurrencyIsoCode\": \"EUR\",\n    \"dealTimestamp\": \"2024-01-25T11:00:00\",\n    \"dealAmount\": 2000.00\n  },\n  {\n    \"dealUniqueId\": \"{{bulkMixed3}}\",\n    \"fromCurrencyIsoCode\": \"GBP\",\n    \"toCurrencyIsoCode\": \"JPY\",\n    \"dealTimestamp\": \"2024-01-25T12:00:00\",\n    \"dealAmount\": 3000.00\n  },\n  {\n    \"dealUniqueId\": \"INVALID-AMOUNT\",\n    \"fromCurrencyIsoCode\": \"USD\",\n    \"toCurrencyIsoCode\": \"EUR\",\n    \"dealTimestamp\": \"2024-01-25T13:00:00\",\n    \"dealAmount\": -500.00\n  }\n]"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals/bulk",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals", "bulk"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "12. Bulk Import - With Duplicate",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Only unique deals imported\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    // First deal should be imported, duplicate should be skipped",
+							"    pm.expect(jsonData.length).to.eql(1);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const timestamp = Date.now();",
+							"pm.variables.set('bulkDup1', `BULK-DUP-${timestamp}`);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[\n  {\n    \"dealUniqueId\": \"{{bulkDup1}}\",\n    \"fromCurrencyIsoCode\": \"USD\",\n    \"toCurrencyIsoCode\": \"EUR\",\n    \"dealTimestamp\": \"2024-01-25T10:00:00\",\n    \"dealAmount\": 1000.00\n  },\n  {\n    \"dealUniqueId\": \"{{bulkDup1}}\",\n    \"fromCurrencyIsoCode\": \"USD\",\n    \"toCurrencyIsoCode\": \"EUR\",\n    \"dealTimestamp\": \"2024-01-25T10:00:00\",\n    \"dealAmount\": 1000.00\n  }\n]"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals/bulk",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals", "bulk"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "13. Get All Deals",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response is array\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.be.an('array');",
+							"});",
+							"",
+							"pm.test(\"Deals have required fields\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    if (jsonData.length > 0) {",
+							"        pm.expect(jsonData[0]).to.have.property('id');",
+							"        pm.expect(jsonData[0]).to.have.property('dealUniqueId');",
+							"        pm.expect(jsonData[0]).to.have.property('fromCurrencyIsoCode');",
+							"        pm.expect(jsonData[0]).to.have.property('toCurrencyIsoCode');",
+							"        pm.expect(jsonData[0]).to.have.property('dealAmount');",
+							"        pm.expect(jsonData[0]).to.have.property('importedAt');",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "14. Large Amount Test",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Large amount accepted\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.dealAmount).to.eql(999999999999.9999);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const timestamp = Date.now();",
+							"pm.variables.set('largeDeal', `DEAL-LARGE-${timestamp}`);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"dealUniqueId\": \"{{largeDeal}}\",\n  \"fromCurrencyIsoCode\": \"USD\",\n  \"toCurrencyIsoCode\": \"EUR\",\n  \"dealTimestamp\": \"2024-01-25T10:30:00\",\n  \"dealAmount\": 999999999999.9999\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "15. Small Amount Test",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Small amount accepted\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.dealAmount).to.eql(0.0001);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const timestamp = Date.now();",
+							"pm.variables.set('smallDeal', `DEAL-SMALL-${timestamp}`);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"dealUniqueId\": \"{{smallDeal}}\",\n  \"fromCurrencyIsoCode\": \"USD\",\n  \"toCurrencyIsoCode\": \"EUR\",\n  \"dealTimestamp\": \"2024-01-25T10:30:00\",\n  \"dealAmount\": 0.0001\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "16. Multiple Currency Pairs - GBP/CHF",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Currency pair accepted\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.fromCurrencyIsoCode).to.eql('GBP');",
+							"    pm.expect(jsonData.toCurrencyIsoCode).to.eql('CHF');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const timestamp = Date.now();",
+							"pm.variables.set('pairDeal', `DEAL-PAIR-${timestamp}`);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"dealUniqueId\": \"{{pairDeal}}\",\n  \"fromCurrencyIsoCode\": \"GBP\",\n  \"toCurrencyIsoCode\": \"CHF\",\n  \"dealTimestamp\": \"2024-01-25T10:30:00\",\n  \"dealAmount\": 7500.25\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/v1/deals",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "v1", "deals"]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+}
+

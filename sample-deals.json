@@ -1,0 +1,38 @@
+[
+  {
+    "dealUniqueId": "DEAL-SAMPLE-001",
+    "fromCurrencyIsoCode": "USD",
+    "toCurrencyIsoCode": "EUR",
+    "dealTimestamp": "2025-01-25T10:30:00",
+    "dealAmount": 10000.50
+  },
+  {
+    "dealUniqueId": "DEAL-SAMPLE-002",
+    "fromCurrencyIsoCode": "GBP",
+    "toCurrencyIsoCode": "JPY",
+    "dealTimestamp": "2025-01-25T11:15:00",
+    "dealAmount": 25000.75
+  },
+  {
+    "dealUniqueId": "DEAL-SAMPLE-003",
+    "fromCurrencyIsoCode": "EUR",
+    "toCurrencyIsoCode": "CHF",
+    "dealTimestamp": "2025-01-25T12:00:00",
+    "dealAmount": 15000.00
+  },
+  {
+    "dealUniqueId": "DEAL-SAMPLE-004",
+    "fromCurrencyIsoCode": "CAD",
+    "toCurrencyIsoCode": "AUD",
+    "dealTimestamp": "2025-01-25T13:45:00",
+    "dealAmount": 50000.25
+  },
+  {
+    "dealUniqueId": "DEAL-SAMPLE-005",
+    "fromCurrencyIsoCode": "CNY",
+    "toCurrencyIsoCode": "USD",
+    "dealTimestamp": "2025-01-25T14:20:00",
+    "dealAmount": 100000.00
+  }
+]
+
